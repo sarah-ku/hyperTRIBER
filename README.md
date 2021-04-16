@@ -45,8 +45,6 @@ design_vector <- c(Samp1 = "control", Samp2 = "control", Samp3 = "control",
 table(design_vector)
 ```
 
-## R code to Find Edits
-This is the R code that filters our data further, reframes the data so it can be run through DEXseq package, and uses the statistical infromation acquired from DEXseq to find significant differential editing sites. Since we are using two different neural populations for our experiment, we expect to find a lot of significant sites.
 
 
 ### Specify our edits of interests.
@@ -68,7 +66,7 @@ my_edits <- rbind(c("A","G"),
 
 ### Preparations
 ```
-project_id <- "drosophila"
+project_id <- "some_project"
 data_list <- data_list[names(design_vector)]
 
 #remember to create folders if they don't exist
@@ -76,7 +74,7 @@ model_dir <- "./results/model/"
 save_dir <-  "./results/model/saved_output/"
 ```
 
-### filter according to replication and minimum counts
+### Filter potential positions according to replication and minimum counts
 This function filters out sites based on replication and minimum counts. This is very important as it reduces the run time of functions that we will be running later.
 The argument <b>edits_of_interest</b> is used to specify the edits that will be looked at.
 The argument <b>min_count</b> only keeps sites that have the minimum amount of the nucleotide of interest. Our minimum amount is set to 2.
@@ -88,14 +86,16 @@ For other experimental designs, these can of course be changed but for the sake 
 data_list <- restrict_data(data_list=data_list,design_vector=design_vector,min_samp_control=2,min_samp_treat=2,min_count=2,edits_of_interest=my_edits)
 ```
 
- 
-### Primary comonent analysis
+### Principal comonent analysis
 ```
-my_pca <- makeEditPCA(data_list_restricted,editTypes = editTypes,refGR = locsGR,design_vector = design_vector,my_title = "",refBased = T,stranded=T)
+my_pca <- makeEditPCA(data_list_restricted,editTypes = editTypes,refGR = locsGR,design_vector = design_vector,my_title = "",refBased = T,stranded=F)
 ```
 
 ### Make model with DEXseq
-This creates countfiles that can be used by DEXseq and a fake annotation files used in the modelling process to generate the statistical framework to be used to find significant sites.
+This creates count and annotation files that are compatible with DEXseq, and then runs the model, specifying a given number of cores.
+
+Be careful that this can be a memory and CPU intenstive process, so reduce the number of course if necessarily.
+
 ```
 generateCountFiles(data_list = data_list,stranded=F,names_vec = row.names(data_list[[1]]),out_dir = model_dir,design_vector = design_vector)
 dxd.res <- make_test(out_dir = model_dir,design_vector = design_vector,ncores=10)
@@ -104,36 +104,18 @@ save(dxd.res,file=paste0(save_dir,"/dxd.res.Rdat"))
 ### Compile hits table from model
 Here we use FDR to find significant "hits" from our DEXseq data and compile it into a table.
 ```
-posGR <- getHits(res = dxd.res,stranded=F,fdr = 0.1,fold=-1000,addMeta = T,ncore=10,include_ref = T,refGR = locsGR,edits_of_interest=my_edits,design_vector=design_vector,data_list=data_list)
+posGR <- getHits(res = dxd.res,stranded=F,fdr = 0.1,fold=1,addMeta = T,ncore=10,include_ref = T,refGR = locsGR,edits_of_interest=my_edits,design_vector=design_vector,data_list=data_list)
 ```
 
 ## Annotation
 
 Now that we had our significant hits, we wanted to annotate them to the genome to identify locations and structure of our hits. The GTF file for the annotations was fetched from https://www.ensembl.org/Drosophila_melanogaster/Info/Index
 ```
-#open annotations
-gtf <- rtracklayer::import("./reference/Drosophila_melanogaster.BDGP6.86.gtf")
-gtfGR <- gtf
-
-ids <- tapply(gtf$gene_id,gtf$gene_name,function(x) x[1])
 
 quant.mat <- tpm.mat[,names(design_vector[design_vector=="control"])]
 quant.vec <- rowMeans(quant.mat)
 
-HACK:
-at the moment, we are working on fixing this, but the annotation will not work unless these commands are run:
-tmp <- as.vector(gtf$type)
-tmp[tmp=="three_prime_utr"] <- "3UTR"
-tmp[tmp=="five_prime_utr"] <- "5UTR"
-tmp[tmp=="transcript"] <- "CDS"
-gtf$type <- as.factor(tmp)
-
 #Annotate
 posGR <- addGenes(gtfGR = gtf,posGR = posGR,ncore = 10,quant = quant.vec,assignStrand = F,geneids = ids)
-save(posGR,file=paste0(save_dir,"/posGR_lenient.Rdat"))
+save(posGR,file=paste0(save_dir,"/posGR_annotated.Rdat"))
 ```
-
-## Works cited:
-1. Illuminating spatial A-to-I RNA editing signatures within the Drosophila brain
-Anne L. Sapiro, Anat Shmueli, Gilbert Lee Henry, Qin Li, Tali Shalit, Orly Yaron, Yoav Paas, Jin Billy Li, Galit Shohat-Ophir
-Proceedings of the National Academy of Sciences Feb 2019, 116 (6) 2318-2327; DOI: 10.1073/pnas.1811768116
