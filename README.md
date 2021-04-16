@@ -20,96 +20,27 @@ samtools mpileup --max-depth 50000 -Q 30 --skip-indels -f ./reference/reference_
 ```
 Note that the reference genome is necessary in order to run samtools mpileup.
 
-## Base calling
-
-### Preparation
-This package tools start with .bam files for our base calls so it is recommended to use an alignment tool such as STAR on your fastq files. 
-
-### Samtools/perl
-Samtools with the mpileup command along with the perl script creates a text file of base counts for all positions where we have at least 1 read that differs from our reference genome.
-
-The perl script "HyperTRIBE_mpileup2bases.pl" is available in the github repository.
-
-```wrap
-#FROM SORTED BAM FILES START HERE: start with samtools mpileup
-#using the folder with the bam files as your working directory:
-samtools mpileup --max-depth 50000 -Q 30 --skip-indels -f ./reference/Drosophila_melanogaster.BDGP6.dna.toplevel.fa Crz_R1.sort.bam Crz_R2.sort.bam Crz_R3.sort.bam Fru_R1.sort.bam Fru_R2.sort.bam Fru_R3.sort.bam | perl hyperTRIBE_mpileup2bases.pl> baseCounts_roots_Drosophila.txt &
-```
-## Salmon Quantifications
-
-Salmon is a tool used for transcript quantification from RNA-seq data. For salmon to run you will need to first build an index from the reference transcript
-you are planning to use.
-
-### Build the Index
-```wrap
-salmon index -t Drosophila_melanogaster.BDGP6.cdna.all.fa -i droso_index
-```
-
-After building the index, you can then quantify your fasta files against the index.
-For simplicity, a text file was made that contained the prefixes for the files to be quantified.
-the script below loops through each sample and invokes salmon.
-The arguments given are -i, which tells you where to locate the index built above and -l A, which tells salmon that it should automatically determine the library type of the sequencing reads. -r is used to specify that it's a single read as opposed to paired end reads ) and -o specifies the directory of the output files. More information on salmon tools can be accessed here: https://salmon.readthedocs.io/en/latest/salmon.html
-
-### Quantify using query sequences
-```wrap
-for BASE in `cat Prefix_name.txt`
-do
-loc="./files/"
-R1=$BASE;
-samp=$R1;
-R1+=".fastq.gz";
-echo "Processing sample ${samp}"
-salmon quant -i ./reference/droso_index -l A \
--r ${loc}/${R1} \
--p 10 -o quants/${samp}_quant
-done
-```
-
-
-### R code to produce TPM matrix
-
-Here we generate the matrix containing the Transcripts Per Million(TPM) values of our salmon outputs. TPM is the unit of relative abundance that is used for further downstream analysis.
-
-```
-
-my.path <- paste0("./quants/")
-filenames <- list.files(path = my.path)
-  tpm.q <- list()
-  for(file in filenames)
-  {
-    print(file)
-    myquant <- read.table(paste0(my.path,"/",file,"/quant.sf"),sep="\t",header=T)
-    mytpm <-  myquant$TPM
-    names(mytpm) <- myquant$Name
-    tpm.q[[file]] <- mytpm
-  }
-
-  tpm.mat <- do.call(cbind,tpm.q)
-  colnames(tpm.mat) <- gsub("(.*)_quant","\\1",colnames(tpm.mat))
-  ```
-
-## R code for modelling our data
+## Running the pipeline
 
 Here we prepare the experimental setup for our data
 ```
 #load in our text file that we got as an output from 
-data_drp <- read.table("./files/baseCounts_roots_Drosophila.txt",header=F)
-dim(data_drp)
+data <- read.table("./files/baseCounts_from_mpileup.txt",header=F)
+dim(data)
 
 #create a genomics range of the reference genome base for each of the considered positions.
 locsGR <- GRanges(Rle(data_drp$V1),IRanges(data_drp$V2,width=1),ref=data_drp$V3,names=paste(data_drp$V1,data_drp$V2,sep="_"))
 
 
-samp.names <- c("Crz_R1","Crz_R2","Crz_R3","Fru_R1","Fru_R2",
-                      "Fru_R3")
+samp.names <- c("Samp1","Samp2","Samp3","Samp4","Samp5","Samp6")
 
 
-data_list <- extractCountData(data_drp,samp.names,strand=F)
+data_list <- extractCountData(data,samp.names,strand=F)
 
 
 #now produce one design vector per experiment
-design_vector <- c(Crz_R1 = "control", Crz_R2 = "control", Crz_R3 = "control", 
-                                Fru_R1 = "treat", Fru_R2 = "treat", Fru_R3 = "treat")
+design_vector <- c(Samp1 = "control", Samp2 = "control", Samp3 = "control", 
+                                Samp4 = "treat", Samp5 = "treat", Samp6 = "treat")
 
 table(design_vector)
 ```
