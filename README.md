@@ -3,19 +3,14 @@ R package for differential RNA editing analysis
 
 ## Summary
 hyperTRIBER is an R package used for detecting sites which significant differental editing between conditions using transcriptomics based data. The pipeline was originally developed for hyperTRIBE (targets of RNA binding proteins identified by editing), which allows for the detection of transcripts bound by a given RNA binding protein (RBP) through the detection of edited sites between negative control samples, and cases where the RBP is fused to the hypercatyletic domain of ADAR. However, the approach is highly applicable for general differential editing set-ups.
-     
-### Requirements:
-1.  Unix/Linux based operating system 
-2.  Perl 
-3.  R (tested with version 3.6.2); with the following packages:  
-      - Devtools  
-      - doParallel  
-      - reshape2  
-      - DEXseq  
-      - GenomicRanges 
-      - RNAeditR  
  
-      
+## Installation in R 
+
+```
+library(devtools)
+install_github("sarah-ku/hyperTRIBER")
+```   
+   
 ## Base calling
 
 ### Preparation
