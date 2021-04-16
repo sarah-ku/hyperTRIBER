@@ -4,13 +4,22 @@ R package for differential RNA editing analysis
 ## Summary
 hyperTRIBER is an R package used for detecting sites which significant differental editing between conditions using transcriptomics based data. The pipeline was originally developed for hyperTRIBE (targets of RNA binding proteins identified by editing), which allows for the detection of transcripts bound by a given RNA binding protein (RBP) through the detection of edited sites between negative control samples, and cases where the RBP is fused to the hypercatyletic domain of ADAR. However, the approach is highly applicable for general differential editing set-ups.
  
-## Installation in R 
+## Installation
+
+The package is installed in R with the following command:
 
 ```
 library(devtools)
 install_github("sarah-ku/hyperTRIBER")
 ```   
-   
+
+Prior to running the package in R, one needs to run the following command including the custom perl script `hyperTRIBE_mpileup2bases.pl` on their mapped .BAM files for their samples. For example, for a set up with 6 samples (Samp1 to Samp6), would the command look like this:
+
+```wrap
+samtools mpileup --max-depth 50000 -Q 30 --skip-indels -f ./reference/reference_genome.fa Samp1.sort.bam Samp2.sort.bam Samp3.sort.bam Samp4.sort.bam Samp5.sort.bam Samp6.sort.bam | perl hyperTRIBE_mpileup2bases.pl> baseCounts_from_mpileup.txt &
+```
+Note that the reference genome is necessary in order to run samtools mpileup.
+
 ## Base calling
 
 ### Preparation
