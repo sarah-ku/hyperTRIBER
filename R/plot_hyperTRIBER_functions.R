@@ -156,7 +156,7 @@ makeEditPCA <- function(data_list,editTypes=my_edits,refGR,design_vector,my_titl
     for(i in 1:nrow(editTypes))
     {
       editType <- editTypes[i,]
-      data_red <- lapply(data_list,function(x) x[names(refGR[refGR$ref==editType[1]]),editType])
+      data_red <- lapply(data_list, function(x) x[names(posGR[posGR$ref == editType[1] & posGR$targ==editType[2]]), editType])
       data_red_matrix <- do.call(cbind,lapply(data_red,function(x) x[,2]/(x[,1]+x[,2])))
       data_red_matrix[is.na(data_red_matrix)] <- 0
       tmp_list[[i]] <- data_red_matrix
@@ -175,7 +175,7 @@ makeEditPCA <- function(data_list,editTypes=my_edits,refGR,design_vector,my_titl
     for(i in 1:nrow(editTypes))
     {
       editType <- editTypes[i,]
-      data_red <- lapply(data_list,function(x) x[names(posGR[posGR$ref==editType[1]]),editType])
+      data_red <- lapply(data_list, function(x) x[names(posGR[posGR$ref == editType[1] & posGR$targ==editType[2]]), editType])
       data_red_matrix <- do.call(cbind,lapply(data_red,function(x) x[,2]/(x[,1]+x[,2])))
       data_red_matrix[is.na(data_red_matrix)] <- 0
       data_red_matrix <- data_red_matrix[apply(data_red_matrix,1,max)>0,]
