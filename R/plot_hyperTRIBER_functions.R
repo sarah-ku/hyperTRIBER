@@ -124,88 +124,80 @@ plot_samples <- function(data_list,design_vector)
 }
 
 
-makeEditPCA <- function(data_list,editTypes=my_edits,refGR,design_vector,my_title="",refBased=T,posGR=NULL,stranded=F,give.mat=F)
+makeEditPCA <- function (data_list, editTypes = my_edits, refGR, design_vector, 
+    my_title = "", refBased = T, posGR = NULL, stranded = F, 
+    give.mat = F) 
 {
-  s.names <- names(data_list)
-
-
-  if(refBased)
-  {
-
-    refGR$ref <- toupper(refGR$ref)
-
-    if(stranded)
-    {
-      conv_vec <- c("A","T","C","G")
-      names(conv_vec) <- c("T","A","G","C")
-
-      names(refGR) <- paste0(refGR$names,",+")
-      refGR2 <- refGR
-      names(refGR2) <- paste0(refGR$names,",-")
-      refGR2$ref <- conv_vec[as.vector(refGR2$ref)]
-      refGR <- unlist(GRangesList(refGR,refGR2))
-      refGR <- refGR[row.names(data_list[[1]])]
-
-    }else{
-      names(refGR) <- refGR$names
-      refGR <- refGR[row.names(data_list[[1]])]
+    s.names <- names(data_list)
+    if (refBased) {
+        refGR$ref <- toupper(refGR$ref)
+        if (stranded) {
+            conv_vec <- c("A", "T", "C", "G")
+            names(conv_vec) <- c("T", "A", "G", "C")
+            names(refGR) <- paste0(refGR$names, ",+")
+            refGR2 <- refGR
+            names(refGR2) <- paste0(refGR$names, ",-")
+            refGR2$ref <- conv_vec[as.vector(refGR2$ref)]
+            refGR <- unlist(GRangesList(refGR, refGR2))
+            refGR <- refGR[row.names(data_list[[1]])]
+        }
+        else {
+            names(refGR) <- refGR$names
+            refGR <- refGR[row.names(data_list[[1]])]
+        }
+        tmp_list <- list()
+        for (i in 1:nrow(editTypes)) {
+            editType <- editTypes[i, ]
+            my_names <- names(posGR[ (posGR$ref == editType[1]) & (posGR$targ == editType[2])])
+            data_red <- lapply(data_list, function(x) x[my_names, editType])
+            data_red_matrix <- do.call(cbind, lapply(data_red, 
+                function(x) x[, 2]/(x[, 1] + x[, 2])))
+            data_red_matrix[is.na(data_red_matrix)] <- 0
+            row.names(data_red_matrix) <- my_names
+            tmp_list[[i]] <- data_red_matrix
+        }
+        data_red_matrix <- do.call(rbind, tmp_list)
+        data_red_matrix <- data_red_matrix[apply(data_red_matrix, 
+            1, max) > 0, ]
+        print(dim(data_red_matrix))
+        pca <- prcomp(data_red_matrix, center = T, scale. = T)
+        pca_comps <- as.data.frame(pca$rotation)
     }
-
-
-    tmp_list <- list()
-    for(i in 1:nrow(editTypes))
-    {
-      editType <- editTypes[i,]
-      data_red <- lapply(data_list, function(x) x[names(posGR[posGR$ref == editType[1] & posGR$targ==editType[2]]), editType])
-      data_red_matrix <- do.call(cbind,lapply(data_red,function(x) x[,2]/(x[,1]+x[,2])))
-      data_red_matrix[is.na(data_red_matrix)] <- 0
-      tmp_list[[i]] <- data_red_matrix
+    else {
+        tmp_list <- list()
+        for (i in 1:nrow(editTypes)) {
+            editType <- editTypes[i, ]
+            my_names <- names(posGR[ (posGR$ref == editType[1]) & (posGR$targ == editType[2])])
+            data_red <- lapply(data_list, function(x) x[names(posGR[posGR$ref == 
+                editType[1] & posGR$targ == editType[2]]), editType])
+            data_red_matrix <- do.call(cbind, lapply(data_red, 
+                function(x) x[, 2]/(x[, 1] + x[, 2])))
+            data_red_matrix[is.na(data_red_matrix)] <- 0
+            data_red_matrix <- data_red_matrix[apply(data_red_matrix, 
+                1, max) > 0, ]
+            row.names(data_red_matrix) <- my_names
+            tmp_list[[i]] <- data_red_matrix
+        }
+        data_red_matrix <- do.call(rbind, tmp_list)
+        pca <- prcomp(data_red_matrix, center = T, scale. = T)
+        pca_comps <- as.data.frame(pca$rotation)
     }
-
-    data_red_matrix <- do.call(rbind,tmp_list)
-    data_red_matrix <- data_red_matrix[apply(data_red_matrix,1,max)>0,]
-    print(dim(data_red_matrix))
-
-    pca<-prcomp(data_red_matrix,center=T,scale.=T)
-    pca_comps <- as.data.frame(pca$rotation)
-
-    #type_colors <- c("red","blue")
-  }else{
-    tmp_list <- list()
-    for(i in 1:nrow(editTypes))
-    {
-      editType <- editTypes[i,]
-      data_red <- lapply(data_list, function(x) x[names(posGR[posGR$ref == editType[1] & posGR$targ==editType[2]]), editType])
-      data_red_matrix <- do.call(cbind,lapply(data_red,function(x) x[,2]/(x[,1]+x[,2])))
-      data_red_matrix[is.na(data_red_matrix)] <- 0
-      data_red_matrix <- data_red_matrix[apply(data_red_matrix,1,max)>0,]
-
-      tmp_list[[i]] <- data_red_matrix
+    type <- design_vector[names(data_list)]
+    pca_plot_quantification <- ggplot(data = pca_comps, aes(x = PC1, 
+        y = PC2, fill = factor(type), label = s.names)) + geom_point(size = 6, 
+        pch = 21) + labs(color = "Type") + geom_text(aes(label = s.names), 
+        size = 3, hjust = 0.9, vjust = 1.5, col = "black") + 
+        xlab(paste("PC1", round(summary(pca)$importance[2, 1], 
+            4) * 100, "% of variance")) + ylab(paste("PC2", round(summary(pca)$importance[2, 
+        2], 4) * 100, "% of variance")) + ggtitle(my_title) + 
+        theme(plot.title = element_text(hjust = 0.5), text = element_text(size = 20), 
+            axis.text = element_text(size = 20)) + theme_classic()
+    if (give.mat) {
+        return(list(pca_plot_quantification, data_red_matrix))
     }
-
-    data_red_matrix <- do.call(rbind,tmp_list)
-
-    pca<-prcomp(data_red_matrix,center=T,scale.=T)
-    pca_comps <- as.data.frame(pca$rotation)
-
-  }
-
-  type <- design_vector[names(data_list)]
-  pca_plot_quantification <- ggplot(data=pca_comps, aes(x=PC1, y=PC2,fill=factor(type), label=s.names)) +
-    geom_point(size=6,pch=21)+
-    labs(color="Type")+
-    geom_text(aes(label=s.names), size=3, hjust=0.9, vjust=1.5,col="black")+
-    xlab(paste("PC1",round(summary(pca)$importance[2, 1], 4) * 100, "% of variance")) +
-    ylab(paste("PC2", round(summary(pca)$importance[2, 2], 4) * 100, "% of variance")) +
-    ggtitle(my_title) +
-    theme(plot.title = element_text(hjust = 0.5), text = element_text(size=20), axis.text=element_text(size=20)) + theme_classic()
-
-  if(give.mat)
-  {
-    return(list(pca_plot_quantification,data_red_matrix))
-  }else{
-    return(pca_plot_quantification)
-  }
+    else {
+        return(pca_plot_quantification)
+    }
 }
 
 
