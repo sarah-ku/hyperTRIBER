@@ -305,8 +305,8 @@ make_test_ADAR <- function(out_dir,design_vector=c(rep("control",5),rep("treat",
   dxd = DEXSeqDataSetFromHTSeq(
     countFiles,
     sampleData=sampleTable,
-    #design= ~ sample + exon + condition:exon + adar:exon  + adar:condition:exon,
-    design= ~ sample + exon + condition:exon + adar:exon,
+    design= ~ sample + exon + condition:exon + adar:exon  + adar:condition:exon,
+    #design= ~ sample + exon + condition:exon + adar:exon,
     flattenedfile=flattenedFile )
 
   ## ----sizeFactors1----------------------------------------------------------
@@ -318,11 +318,11 @@ make_test_ADAR <- function(out_dir,design_vector=c(rep("control",5),rep("treat",
   ## ----estDisp1--------------------------------------------------------------
 
 
-   formulaFullModel    =  ~ sample + exon + adar:exon + condition:exon
-   formulaReducedModel =  ~ sample + exon + adar:exon
+  # formulaFullModel    =  ~ sample + exon + adar:exon + condition:exon
+  # formulaReducedModel =  ~ sample + exon + adar:exon
 
-  #formulaFullModel    =  ~ sample + exon + condition:exon + adar:exon + adar:condition:exon
-  #formulaReducedModel =  ~ sample + exon + adar:exon
+  formulaFullModel    =  ~ sample + exon + condition:exon + adar:exon + adar:condition:exon
+  formulaReducedModel =  ~ sample + exon + adar:exon
 
   print("estimate dispersion")
   dxd = estimateDispersions( dxd ,fitType="local",BPPARAM=BPPARAM,formula = formulaFullModel)
