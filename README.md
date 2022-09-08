@@ -24,7 +24,7 @@ Note that the reference genome is necessary in order to run samtools mpileup.
 
 ### Special note to paired-end stranded data
 
-If your samples are paired-end and stranded you need to provide a two .bam files for the forward and reverse strands and not for each side of the mate pair. Here is some code to make this conversion (see for example here: https://www.biostars.org/p/92935/).
+If your samples are paired-end and stranded you need to provide two .bam files for each sample, one for the forward and one for the reverse strand, not for each side of the mate pair. Here is some code to make this conversion (see for example here: https://www.biostars.org/p/92935/).
 
 ```wrap
 for f in `cat filenames_samples.txt`
@@ -69,7 +69,7 @@ rm $name_rev2.bai
 done
 ```
 
-After running the above code I then create a new file which has all of the samples listed in order.
+After running the above code you can then create a new file which has all of the samples listed in order which can be passed to the mpileup script.
 
 ```wrap
 touch myfiles_fwd_rev.txt
