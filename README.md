@@ -83,7 +83,7 @@ done
 Then run the mpileup part (confusing: use hyperTRIBE_mpileup2bases.pl and NOT the stranded counterpart here).
 
 ```wrap
-samtools mpileup --max-depth 500000 -Q 40 --skip-indels -f arab_genome_amv_rv.fa `cat myfiles.txt` | perl /home/sarah/R_code/ECT2/hyperTRIBE_mpileup2bases.pl > baseCounts_Q40_stranded.txt &
+samtools mpileup --max-depth 500000 -Q 40 --skip-indels -f reference_genome.fa `cat myfiles.txt` | perl hyperTRIBE_mpileup2bases.pl > baseCounts_Q40_stranded.txt &
 ```
 
 ## Running the pipeline
