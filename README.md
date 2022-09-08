@@ -22,7 +22,9 @@ samtools mpileup --max-depth 50000 -Q 30 --skip-indels -f ./reference/reference_
 ```
 Note that the reference genome is necessary in order to run samtools mpileup.
 
-### Special note to stranded data
+### Special note to paired-end stranded data
+
+If your samples are paired-end and stranded you need to provide a two .bam files for the forward and reverse strands and not for each side of the mate pair. Here is some code to make this conversion (see for example here: https://www.biostars.org/p/92935/).
 
 ```wrap
 for f in `cat filenames_samples.txt`
@@ -65,8 +67,11 @@ rm $name_rev2
 rm $name_rev1.bai
 rm $name_rev2.bai
 done
+```
 
+After running the above code I then create a new file which has all of the samples listed in order.
 
+```wrap
 touch myfiles_fwd_rev.txt
 for f in `cat filenames_samples.txt`
 do
@@ -74,6 +79,8 @@ print ${f}.sorted_fwd.bam >> myfiles.txt
 print ${f}.sorted_rev.bam >> myfiles.txt
 done
 ```
+
+Then run the mpileup part (confusing: use hyperTRIBE_mpileup2bases.pl and NOT the stranded counterpart here).
 
 ```wrap
 samtools mpileup --max-depth 500000 -Q 40 --skip-indels -f arab_genome_amv_rv.fa `cat myfiles.txt` | perl /home/sarah/R_code/ECT2/hyperTRIBE_mpileup2bases.pl > baseCounts_Q40_stranded.txt &
