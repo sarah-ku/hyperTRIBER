@@ -13,12 +13,71 @@ library(devtools)
 install_github("sarah-ku/hyperTRIBER")
 ```   
 
+## Base pileup
+
 Prior to running the package in R, one needs to run the following command including the custom perl script `hyperTRIBE_mpileup2bases.pl` on their mapped .BAM files for their samples. For example, for a set up with 6 samples (Samp1 to Samp6), would the command look like this:
 
 ```wrap
 samtools mpileup --max-depth 50000 -Q 30 --skip-indels -f ./reference/reference_genome.fa Samp1.sort.bam Samp2.sort.bam Samp3.sort.bam Samp4.sort.bam Samp5.sort.bam Samp6.sort.bam | perl hyperTRIBE_mpileup2bases.pl> baseCounts_from_mpileup.txt &
 ```
 Note that the reference genome is necessary in order to run samtools mpileup.
+
+### Special note to stranded data
+
+```wrap
+for f in `cat filenames_samples.txt`
+do
+myname=${f}.sorted
+
+name_fwd1=${myname}_fwd1.bam
+name_fwd2=${myname}_fwd2.bam
+name_fwd=${myname}_fwd.bam
+
+name_rev1=${myname}_rev1.bam
+name_rev2=${myname}_rev2.bam
+name_rev=${myname}_rev.bam
+
+samtools view -bh -f 99 ${myname}.bam > $name_fwd1
+samtools index $name_fwd1
+
+samtools view -bh -f 147 ${myname}.bam > $name_fwd2
+samtools index $name_fwd2
+
+samtools merge -f $name_fwd $name_fwd1 $name_fwd2
+samtools index $name_fwd
+
+samtools view -bh -f 83 ${myname}.bam > $name_rev1
+samtools index $name_rev1
+
+samtools view -bh -f 163 ${myname}.bam > $name_rev2
+samtools index $name_rev2
+
+samtools merge -f $name_rev $name_rev1 $name_rev2
+samtools index $name_rev
+
+rm $name_fwd1
+rm $name_fwd2
+rm $name_fwd1.bai
+rm $name_fwd2.bai
+
+rm $name_rev1
+rm $name_rev2
+rm $name_rev1.bai
+rm $name_rev2.bai
+done
+
+
+touch myfiles_fwd_rev.txt
+for f in `cat filenames_samples.txt`
+do
+print ${f}.sorted_fwd.bam >> myfiles.txt
+print ${f}.sorted_rev.bam >> myfiles.txt
+done
+```
+
+```wrap
+samtools mpileup --max-depth 500000 -Q 40 --skip-indels -f arab_genome_amv_rv.fa `cat myfiles.txt` | perl /home/sarah/R_code/ECT2/hyperTRIBE_mpileup2bases.pl > baseCounts_Q40_stranded.txt &
+```
 
 ## Running the pipeline
 
