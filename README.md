@@ -141,15 +141,19 @@ save_dir <-  "./results/model/saved_output/"
 ```
 
 ### Filter potential positions according to replication and minimum counts
-This function filters out sites based on replication and minimum counts. This is very important as it reduces the run time of functions that we will be running later.
-The argument <b>edits_of_interest</b> is used to specify the edits that will be looked at.
-The argument <b>min_count</b> only keeps sites that have the minimum amount of the nucleotide of interest. Our minimum amount is set to 2.
-The argument <b>min_samp_control</b> looks at the 1st base of each vector contained in <b>my_edits</b> and keeps only sites that contain the set minimum amount of counts in a set number of control samples (2 in our case) while <b>min_samp_treat</b> looks at the 2nd base of each vector and does the same for treatment samples.
 
-For other experimental designs, these can of course be changed but for the sake of the drosophila experiment, we kept the values at 2 for each of the arguments.
+Before testing for differential editing between the 'control' and 'treat' samples, we first need to filter down the number of testable positions. The function <b>restrict_data</b> filters out sites based on replication and minimum counts. This step is very important as it reduces the run time of functions that we will be running later.
+
+The argument <b>edits_of_interest</b> is used to specify the edits that will be looked at. In most cases I default to the full set above and then filter afterwards, but if you incorporate too many edits types that aren't of interest you could reduce power in your analysis.
+
+The argument <b>min_samp_treat</b> looks at the 'edit' base (for example G if the reference is an A, in the case of an A>G edit) and looks for consistency in edits across the given replicates. For example, the default of <b>min_samp_treat = 2</b> implies that we want to observe the edit in two or more replicates.
+
+The argument <b>min_count</b> filters sites according to the number of reads covering the edit base in the individual replicates, in at least the number of samples specificied by <b>min_samp_treat</b>. Our minimum amount is set to 2. Therefore, if <b>min_samp_treat = 2</b> then we would be asking for at least 2 replicates with at least 2 reads covering the edit base.
+
+The argument <b>both_ways</b> is useful for 'two-way' experiments, whereby one is interested in higher editing in either those designated 'control' OR those designated 'treat'. In standard HyperTRIBE set ups whereby the 'control' samples are negative controls (for example with free ADAR only), you would use <b>both_ways = F</b>, since you are only interested in higher editing in the 'treat' samples. If you use the pipeline for more complicated set ups (see for example our single VS triple mutant HyperTRIBE set ups here: https://elifesciences.org/articles/72377, or for standard RNA-editing site detection) it could be helpful to set <b>both_ways = T</b>.
 
 ```
-data_list <- restrict_data(data_list=data_list,design_vector=design_vector,min_samp_control=2,min_samp_treat=2,min_count=2,edits_of_interest=my_edits)
+data_list <- restrict_data(data_list=data_list, design_vector=design_vector, min_samp_treat=2, min_count=2, both_ways = F, edits_of_interest=my_edits)
 ```
 
 ### Principal comonent analysis
